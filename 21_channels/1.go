@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // func processNum(ch chan int) {
 // 	fmt.Println("Processing number: ", <-ch)
@@ -87,17 +90,92 @@ import "fmt"
 
 // }
 
-//buffered channels
+// //buffered channels
+
+// func main() {
+// 	emailChannel := make(chan string, 2) //buffer size of 2
+
+// 	emailChannel <- "aman@mmt.com"
+// 	emailChannel <- "someone@mmt.com"
+// 	// emailChannel <- "test@mmt.com" // this will block as the buffer size is only 2
+
+// 	fmt.Println(<-emailChannel)
+// 	fmt.Println(<-emailChannel)
+// 	// fmt.Println(<-emailChannel)// this will block the process and will be in deadlock coz now the buffer is empty after receiving 2 values
+
+// }
+
+// // implementing quueue system for sending data
+// func emailSender(emailChannel chan string, done chan bool) {
+// 	defer func() { done <- true }()
+
+// 	//block operation
+// 	for email := range emailChannel {
+// 		fmt.Println("Sending email to: ", email)
+// 		time.Sleep(time.Second)
+// 	}
+// }
+
+// func main() {
+// 	emailChannel := make(chan string, 10)
+// 	done := make(chan bool)
+// 	go emailSender(emailChannel, done)
+// 	for i := 0; i < 5; i++ {
+// 		emailChannel <- fmt.Sprintf("employee_%d@gmail.com", i)
+// 	}
+// 	fmt.Println("Done sending emails")
+
+// 	//this is important as the range over channel is a blocking operation
+// 	close(emailChannel)
+// 	<-done
+// }
+
+// // listening upon multiple channels --> select keyword use
+// func main() {
+// 	chan1 := make(chan int)
+// 	chan2 := make(chan string)
+
+// 	go func() {
+// 		chan2 <- "pong"
+// 	}()
+// 	go func() {
+// 		chan1 <- 10
+// 	}()
+
+// 	for i := 0; i < 2; i++ {
+// 		select {
+// 		case chan1Val := <-chan1:
+// 			fmt.Println("Received data from channel 1: ", chan1Val)
+// 		case chan2Val := <-chan2:
+// 			fmt.Println("Received data from channel 2: ", chan2Val)
+// 		}
+// 	}
+// }
+
+// stricly ensuring that a particular channel is for send only or receice only
+// ensures type safety
+func emailSender(emailChannel <-chan string, done chan<- bool) {
+	// emailChannel <-chan string. --> arrow outwards channel : send only channel
+	//done chan<- bool --> arrow towrads channel : receive only channel
+	defer func() { done <- true }()
+
+	//block operation
+	for email := range emailChannel {
+		fmt.Println("Sending email to: ", email)
+		time.Sleep(time.Second)
+	}
+}
 
 func main() {
-	emailChannel := make(chan string, 2) //buffer size of 2
+	emailChannel := make(chan string, 10)
+	done := make(chan bool)
+	go emailSender(emailChannel, done)
+	for i := 0; i < 5; i++ {
+		emailChannel <- fmt.Sprintf("employee_%d@gmail.com", i)
+	}
+	fmt.Println("Done sending emails")
 
-	emailChannel <- "aman@mmt.com"
-	emailChannel <- "someone@mmt.com"
-	// emailChannel <- "test@mmt.com" // this will block as the buffer size is only 2
-
-	fmt.Println(<-emailChannel)
-	fmt.Println(<-emailChannel)
-	// fmt.Println(<-emailChannel)// this will block the process and will be in deadlock coz now the buffer is empty after receiving 2 values
-
+	//this is important as the range over channel is a blocking operation
+	close(emailChannel)
+	<-done
 }
